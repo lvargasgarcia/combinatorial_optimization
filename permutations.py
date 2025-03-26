@@ -12,7 +12,14 @@ def inverse(p):
         resp[p[i]-1] = i + 1
     return resp
 
-
+def random_permutation(n):
+    elements = {i for i in range(1, n+1)}
+    pi = []
+    for i in range(n):
+        el = random.choice(list(elements))
+        pi.append(el)
+        elements.remove(el)
+    return pi
 
 def permutations_set(n, pos, k):
     """

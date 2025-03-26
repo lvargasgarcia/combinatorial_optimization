@@ -70,7 +70,7 @@ def update_scores(pi, pi_neighborhood, objective_function, improving_set, list_k
 
 
 
-def hill_descent(k,instance, T):
+def hill_descent(k,instance, T, time_interval = 5):
     
     """
     This function returns the permutation that minimizes the value of the objective function
@@ -82,21 +82,19 @@ def hill_descent(k,instance, T):
         return instance.evaluate(pi)
     
     neighborhood = generate_movements(n,k)
-    permutations = list(itertools.permutations(range(1,n+1)))
 
-    t_0 = time.time()
+    t_init = time.time()
 
     l = 1
 
     best = None
     best_value = None
 
-    while l < 20:
+    while time.time() - t_init < time_interval:
 
         t_0 = time.time()
 
-        random_solution = random.choice(permutations)
-        pi = list(random_solution)
+        pi = random_permutation(n)
         pi_neighborhood, improving_set = compute_scores(pi, neighborhood, objective_function, T)
 
         while len(improving_set) > 0:
@@ -119,4 +117,4 @@ def hill_descent(k,instance, T):
 
 instance = SMWTP("instances/smwtp/n10_rdd0.4_tf0.8_seed0.txt")
 
-print(hill_descent(4,instance, set))
+print(hill_descent(4,instance, set, 2))
