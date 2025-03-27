@@ -43,6 +43,28 @@ class SMWTP:
 				fit = fit + self.weights[job] * (t - self.due[job])
 
 		return fit
+	
+	def delta(self, pi, h, position, k):
+
+		different_components = [i for i in range(position-1, position+k-1)]
+		result = 0
+		common_tardiness = sum([self.times[pi[i]-1] for i in range(position-1)])
+		t_pi = common_tardiness
+		t_hpi = common_tardiness
+		
+		for i in different_components:
+			
+			job_pi, job_hpi = pi[i]-1, pi[h[i]-1]-1
+			t_pi += self.times[job_pi]
+			t_hpi += self.times[job_hpi]
+
+			if t_pi > self.due[job_pi]:
+				result -= self.weights[job_pi] * (t_pi - self.due[job_pi])
+			
+			if t_hpi > self.due[job_hpi]:
+				result += self.weights[job_hpi] * (t_hpi - self.due[job_hpi])
+		
+		return result
 
 	def getN(self):
 		return len(self.times)
@@ -53,7 +75,7 @@ class SMWTP:
 		dict = {}
 		for permutation in itertools.permutations(range(1,n+1)):
 			val = self.evaluate(permutation)
-			dict[to_int(permutation)]=val
+			dict[tuple(permutation)]=val
 			if self.globalMin == None or val < self.globalMin:
 				self.globalMin=val
 			if self.globalMax == None or val > self.globalMax:

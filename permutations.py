@@ -29,14 +29,15 @@ def permutations_set(n, pos, k):
     of the pos-th set of k consecutive numbers in any 
     permutation pi of Sn
     """
-    perms = []
+    perms = {}
     taus = list(itertools.permutations(range(1, k+1)))[1:]
 
     move_set_beginning = [i for i in range(pos, pos+k)] + [i for i in range(1,pos)] + [i for i in range(pos+k, n+1)]
     move_set_end = inverse(move_set_beginning)
 
     for tau in taus:
-        perms.append(compose(move_set_beginning, compose(list(tau) + [i for i in range(k+1,n+1)], move_set_end)))
+        perms[tuple(compose(move_set_beginning, compose(list(tau) + [i for i in range(k+1,n+1)], move_set_end)))] = 0
+
     return perms
 
 
@@ -63,7 +64,7 @@ def generate_movements(n,k):
 #     N = neighborhood[i]
 #     for sigma in N:
 #         print(compose(pi, sigma))
-    print("--------------------")
+#    print("--------------------")
 
 
 
