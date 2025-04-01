@@ -2,6 +2,8 @@ from permutations import *
 from smwtp import *
 from functionsamples import *
 import time
+from collections import deque
+
 
 def get_filtered_list(x, k, n):
     return [i for i in range(x - k + 1, x + k - 1) if 1 <= i <= n - k + 1]
@@ -82,12 +84,13 @@ def local_search(k,instance, T, p):
         pi = compose(pi, selected_move[1])
         list_keys = get_filtered_list(selected_move[0], k, n)
         update_scores(pi, neighborhood, improving_set, list_keys, delta, k)
+        # print(len(improving_set))
                 
     return pi
 
 
 def partition_crossover(sigma_1, sigma_2, delta):
-    child = sigma_1
+    child = sigma_1[:]
     moves = []
     pi = compose(inverse(sigma_1), sigma_2)
     i = 0
@@ -160,17 +163,58 @@ def DRILS(instance, local_search, px, perturbation_function, neighborhood_size, 
     
     return best, best_value
 
+def HIRELS(instance, local_search, px, neighborhood_size, T, time_interval_hierls):
 
-instance = SMWTP("instances_opt/instances/100/n100_64_b.txt")
+    stack = deque()
+    t_0 = time.time()
 
-# instance = SMWTP("instances/smwtp/n10_rdd0.4_tf0.8_seed2.txt")
+    best, best_value = None, None
 
-# print(local_search(8,instance, set, 400))
+    while time.time() - t_0 < time_interval_hierls:
 
-pi, pi_value = DRILS(instance, local_search, partition_crossover, perturbation_function, 4, set, 60, int(0.15*instance.getN()), int(0.25*instance.getN()))
+        current = local_search(neighborhood_size, instance, T, random_permutation(instance.getN()))
+        current_level = 0
 
-print("Final value: ", pi_value)
-print("Final permutation: ", pi)
+        if len(stack) == 0 or stack[-1][1] > 0:
+            stack.append((current, current_level))
+        else:
+            
+            pxSuccess = True
+            
+            while len(stack) > 0 and pxSuccess and stack[-1][1] == current_level:
+                top = stack.pop()
+                child = px(current, top[0], instance.delta)
+                pxSuccess = child != current and child != top[0]
+                if pxSuccess:
+                    current = local_search(neighborhood_size, instance, T, child)
+                    current_level += 1
+            
+            if pxSuccess:
+                stack.append((current, current_level))
+        
+        current_value = instance.evaluate(current)
+        if best is None or current_value < best_value:
+            best = current
+            best_value = current_value
+    
+    return best, best_value
+            
+
+
+
+
+# instance = SMWTP("instances_opt/instances/100/n100_1_b.txt")
+
+# pi, pi_value = HIRELS(instance, local_search, partition_crossover, 3, set, 100000000)
+
+# # instance = SMWTP("instances/smwtp/n10_rdd0.4_tf0.8_seed2.txt")
+
+# # print(local_search(8,instance, set, 400))
+
+# pi, pi_value = DRILS(instance, local_search, partition_crossover, perturbation_function, 3, set, 60, int(0.15*instance.getN()), int(0.25*instance.getN()))
+
+# print("Final value: ", pi_value)
+# print("Final permutation: ", pi)
 
 # for _ in range(10000000):
 #     sigma_1 = random_permutation(instance.getN())
