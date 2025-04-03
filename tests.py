@@ -5,30 +5,19 @@ from smwtp import SMWTP
 import json
 from itertools import product
 import re
+from drils import DRILS
 
-neighborhood_sizes = [2,3,4,5,6]
-
-percentage_components_to_perturb = [0.05, 0.1, 0.15, 0.2]
-
-percentage_perturbation_ranges = [0.1, 0.2, 0.3, 0.4]
-
-
-
-def analysis(instance, neighborhood_size, percentage_components_to_perturb, percentage_perturbation_range, time_to_run, real_optimal_value, output_file):
+def analysis(prob, instance, neighborhood_size, time_to_run, real_optimal_value, output_file):
     """
     This function runs the DRILS algorithm with the given parameters and returns the best permutation and its value.
     """
-    components_to_perturb = int(percentage_components_to_perturb * instance.getN())
-    perturbation_range = int(percentage_perturbation_range * instance.getN())
 
-    pi, pi_value = DRILS(instance, local_search, partition_crossover, perturbation_function, neighborhood_size, set, time_to_run, components_to_perturb, perturbation_range)
+    pi, pi_value = DRILS(instance, neighborhood_size, time_to_run)
 
     data = {}
 
-    data["n"] = instance.getN()
+    data["n"] = prob.getN()
     data["neighborhood_size"] = neighborhood_size
-    data["percentage_components_to_perturb"] = percentage_components_to_perturb
-    data["percentage_perturbation_range"] = percentage_perturbation_range
     data["time_to_run"] = time_to_run
     data["real_optimal_value"] = real_optimal_value
     data["best_value"] = pi_value
@@ -45,7 +34,7 @@ from multiprocessing import Pool
 def process_instance(args):
     """Function to process a single instance in parallel."""
     
-    neighborhood_size, percentage_components_to_perturb, percentage_perturbation_range, file, args, optimal_values = args
+    neighborhood_size, time_to_run, file, args, optimal_values = args
 
     regex = r".*_([0-9]+)_b.txt"
     group = re.match(regex, file).group(1)
@@ -56,40 +45,46 @@ def process_instance(args):
         
     number = int(group)
 
-    output_file = f"./results/DRILS_{number}_{neighborhood_size}_{percentage_components_to_perturb}_{percentage_perturbation_range}_{args.n}.json"
+    output_file = f"./results/" + str(args.n) + f"/DRILS_{number}_{neighborhood_size}_{time_to_run}_{args.n}.json"
 
     # Check if the file exists
     if not os.path.exists(output_file):
 
         real_optimal_value = optimal_values[number - 1]
-        instance = SMWTP("./instances_opt/instances/" + str(args.n) + "/" + file)
+        instance = "./instances_opt/instances/" + str(args.n) + "/" + file
+        prob = SMWTP(instance)
 
         if real_optimal_value == 0:
-            
-            old_f = instance.evaluate
+
+            old_f = prob.evaluate
 
             def new_f(p):
                 return old_f(p) + 1
 
-            instance.evaluate = new_f
+            prob.evaluate = new_f
             real_optimal_value = 1
 
 
-        analysis(instance, neighborhood_size, percentage_components_to_perturb, percentage_perturbation_range, args.time_to_run, real_optimal_value, output_file)
+        analysis(prob, instance, neighborhood_size, time_to_run, real_optimal_value, output_file)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--n", type=int)
-    parser.add_argument("--time_to_run", type=int)
+    parser.add_argument("--processes", type=int, default=12)
 
     args = parser.parse_args()
+
+    neighborhood_sizes = [2,3,4,5,6]
+    times_to_run = [5, 10, 15, 20, 40, 60] if args.n == 40 else [60, 120, 180, 240]
+
+    # args.n = 40
 
     optima_file = "./instances_opt/instances/opt" + str(args.n) + ".txt"
     optimal_values = []
 
     # mkdir -p results
-    os.makedirs("./results", exist_ok=True)
+    os.makedirs("./results/" + str(args.n) + "/", exist_ok=True)
 
     with open(optima_file, "r") as f:
         for i, line in enumerate(f):
@@ -98,11 +93,11 @@ if __name__ == "__main__":
     # Prepare arguments for parallel processing
     tasks = []
     for file in os.listdir("./instances_opt/instances/" + str(args.n)):
-        for (neighborhood_size, percentage_component_to_perturb, percentage_perturbation_range) in product(neighborhood_sizes, percentage_components_to_perturb, percentage_perturbation_ranges):
-            tasks.append((neighborhood_size, percentage_component_to_perturb, percentage_perturbation_range, file, args, optimal_values))
+        for (neighborhood_size, time_to_run) in product(neighborhood_sizes, times_to_run):
+            tasks.append((neighborhood_size, time_to_run, file, args, optimal_values))
 
     # Use multiprocessing to parallelize the tasks
-    with Pool(processes=10) as pool:
+    with Pool(processes=args.processes) as pool:
         pool.map(process_instance, tasks)
 
           

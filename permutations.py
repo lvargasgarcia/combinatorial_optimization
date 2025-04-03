@@ -12,9 +12,9 @@ def inverse(p):
         resp[p[i]-1] = i + 1
     return resp
 
-def random_permutation(n):
-    elements = {i for i in range(1, n+1)}
+def random_permutation(elements):
     pi = []
+    n = len(elements)
     for i in range(n):
         el = random.choice(list(elements))
         pi.append(el)

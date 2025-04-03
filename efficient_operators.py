@@ -91,7 +91,7 @@ def local_search(k,instance, T, p):
 
 def partition_crossover(sigma_1, sigma_2, delta):
     child = sigma_1[:]
-    moves = []
+    # moves = []
     pi = compose(inverse(sigma_1), sigma_2)
     i = 0
     n = len(sigma_1)
@@ -107,7 +107,7 @@ def partition_crossover(sigma_1, sigma_2, delta):
             h[l] = pi[l]
             j = max(j, h[l] - 1)
         
-        moves.append(h[:])
+        # moves.append(h[:])
         delta_1 = delta(sigma_1, h, i + 1, j - i + 1)
         # delta_2 = f(compose(sigma_1,h)) - f(sigma_1)
 
@@ -121,24 +121,34 @@ def partition_crossover(sigma_1, sigma_2, delta):
     
     return child
 
-def perturbation_function(p, k, r):
-    pi = p[:]
-    for _ in range(k):
-        i = random.randint(0, len(pi)-1)
-        t = random.randint(-r, r)
-        if t != 0 and i + t < len(pi) and i + t >= 0:
-            pi[i], pi[i+t] = pi[i+t], pi[i]
-    return pi
+def perturbation_function(p):
+    
+    n = len(p)
+    r = random.randint(1,n)
+    total_elems = r
+    current_permutation = random_permutation({a for a in p[:total_elems]})
+
+    while total_elems < n:
+        r = random.randint(1,n-total_elems)
+        current_permutation += random_permutation({a for a in p[total_elems:total_elems+r]})
+        total_elems += r
+    
+    return current_permutation
 
 
-def DRILS(instance, local_search, px, perturbation_function, neighborhood_size, T, time_interval_drils, components_to_perturb, perturbation_range):
+
+
+
+def DRILS(instance, local_search, px, perturbation_function, neighborhood_size, T, time_interval_drils):
 
     delta = instance.delta
+
+    iter = 0
 
     def objective_function(pi):
         return instance.evaluate(pi)
     
-    current = local_search(neighborhood_size, instance, T, random_permutation(instance.getN()))
+    current = local_search(neighborhood_size, instance, T, random_permutation({i for i in range(1, instance.getN() + 1)}))
     t_0 = time.time()
 
     best = current
@@ -146,7 +156,7 @@ def DRILS(instance, local_search, px, perturbation_function, neighborhood_size, 
 
     while time.time() - t_0 < time_interval_drils:
         
-        next = local_search(neighborhood_size, instance, T, perturbation_function(current, components_to_perturb, perturbation_range))
+        next = local_search(neighborhood_size, instance, T, perturbation_function(current))
         child = px(current, next, delta)
         
         if child == current or child == next:
@@ -160,6 +170,8 @@ def DRILS(instance, local_search, px, perturbation_function, neighborhood_size, 
             best = current
     
         print("Current value: ", current_value)
+        iter += 1
+        print("Iteration: ", iter)
     
     return best, best_value
 
@@ -172,7 +184,7 @@ def HIRELS(instance, local_search, px, neighborhood_size, T, time_interval_hierl
 
     while time.time() - t_0 < time_interval_hierls:
 
-        current = local_search(neighborhood_size, instance, T, random_permutation(instance.getN()))
+        current = local_search(neighborhood_size, instance, T, random_permutation({i for i in range(1, instance.getN() + 1)}))
         current_level = 0
 
         if len(stack) == 0 or stack[-1][1] > 0:
@@ -203,22 +215,25 @@ def HIRELS(instance, local_search, px, neighborhood_size, T, time_interval_hierl
 
 
 
-# instance = SMWTP("instances_opt/instances/100/n100_1_b.txt")
+# instance = SMWTP("instances_opt/instances/100/n100_44_b.txt")
 
-# pi, pi_value = HIRELS(instance, local_search, partition_crossover, 3, set, 100000000)
+# # pi, pi_value = HIRELS(instance, local_search, partition_crossover, 3, set, 100000000)
 
 # # instance = SMWTP("instances/smwtp/n10_rdd0.4_tf0.8_seed2.txt")
 
-# # print(local_search(8,instance, set, 400))
+# # # print(local_search(8,instance, set, 400))
 
-# pi, pi_value = DRILS(instance, local_search, partition_crossover, perturbation_function, 3, set, 60, int(0.15*instance.getN()), int(0.25*instance.getN()))
+# pi, pi_value = DRILS(instance, local_search, partition_crossover, perturbation_function, 3, set, 300)
 
 # print("Final value: ", pi_value)
 # print("Final permutation: ", pi)
 
-# for _ in range(10000000):
-#     sigma_1 = random_permutation(instance.getN())
-#     sigma_2 = random_permutation(instance.getN())
+# k = 0
+# j = 1
+# for _ in range(1000):
+    
+#     sigma_1 = random_permutation({i for i in range(1, instance.getN() + 1)})
+#     sigma_2 = perturbation_function(sigma_1)
 #     child = partition_crossover(sigma_1, sigma_2, instance.delta)
 
 #     if instance.evaluate(child) > instance.evaluate(sigma_1) or instance.evaluate(child) > instance.evaluate(sigma_2):
@@ -226,5 +241,12 @@ def HIRELS(instance, local_search, px, neighborhood_size, T, time_interval_hierl
 #         break
 #     else:
 #         print("Child is better than parents")
+    
+#     if instance.evaluate(child) < instance.evaluate(sigma_1) and instance.evaluate(child) < instance.evaluate(sigma_2):
+#         k += 1
+    
+#     j += 1
+
+# print(k/j)
 
 
