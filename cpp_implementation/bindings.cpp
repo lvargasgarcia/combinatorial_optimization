@@ -11,5 +11,6 @@ PYBIND11_MODULE(drils, m) {
           py::arg("file"), 
           py::arg("neighborhood_size"), 
           py::arg("time_interval_drils"),
+          py::arg("steepest_descent"),
           "Run the DRILS algorithm and return the best permutation and its value");
 }

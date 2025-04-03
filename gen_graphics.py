@@ -10,8 +10,20 @@ def gen_graphics(path, n):
     
     info = {}
 
-    neighborhood_sizes = [2,3,4,5,6]
-    times_to_run = [5,10,15,20, 40, 60] if n == 40 else [60, 120, 180, 240]
+    dict_neighborhoods = {
+        40: [2, 3, 4, 5, 6],
+        100: [2, 3, 4, 5, 6],
+        1000: [2,3,4]
+    }
+
+    dict_times_to_run = {
+        40: [5, 10, 15, 20, 40, 60],
+        100: [60, 120, 180, 240],
+        1000: [60, 120, 300, 900]
+    }
+
+    neighborhood_sizes = dict_neighborhoods.get(n)
+    times_to_run = dict_times_to_run.get(n)
 
     for (run_time, neighborhood_size) in product(times_to_run, neighborhood_sizes):
         info.setdefault(run_time, {})
@@ -53,7 +65,7 @@ def gen_graphics(path, n):
             showmeans=True,
             patch_artist=True
         )
-        ax.set_title(f"Run Time: {run_time} seconds")
+        ax.set_title(f"Run Time: {run_time} seconds", pad=15)  # Añadir separación con `pad` pad=15)  # Añadir separación con `pad`
         ax.set_xlabel("Neighborhood Size")
         ax.set_ylabel("Performance")
 
@@ -63,7 +75,7 @@ def gen_graphics(path, n):
         ax.grid(True, linestyle="--", alpha=0.7)
 
         # Calcular y graficar las medias
-        means = [sum(p) / (len(p) + 1) for p in performances]
+        means = [sum(p) / (len(p)) for p in performances]
         ax.plot(
             range(1, len(neighborhood_sizes) + 1),
             means,

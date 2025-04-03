@@ -37,7 +37,13 @@ def process_instance(args):
     neighborhood_size, time_to_run, file, args, optimal_values = args
 
     regex = r".*_([0-9]+)_b.txt"
-    group = re.match(regex, file).group(1)
+    match = re.match(regex, file)
+
+    if match is None:
+        print("Error:", file)
+        return
+    
+    group = match.group(1)
         
     if group is None:
         print("Error:", file)
@@ -75,10 +81,23 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    neighborhood_sizes = [2,3,4,5,6]
-    times_to_run = [5, 10, 15, 20, 40, 60] if args.n == 40 else [60, 120, 180, 240]
-
+    # args.processes = 1
     # args.n = 40
+
+    dict_neighborhoods = {
+        40: [2, 3, 4, 5, 6],
+        100: [2, 3, 4, 5, 6],
+        1000: [2,3,4]
+    }
+
+    dict_times_to_run = {
+        40: [5, 10, 15, 20, 40, 60],
+        100: [60, 120, 180, 240],
+        1000: [60, 120, 300, 900]
+    }
+
+    neighborhood_sizes = dict_neighborhoods.get(args.n)
+    times_to_run = dict_times_to_run.get(args.n)
 
     optima_file = "./instances_opt/instances/opt" + str(args.n) + ".txt"
     optimal_values = []

@@ -3,11 +3,10 @@ from functionsamples import *
 from efficient_operators import *
 
 from permutations import *
-import drils as d
+from drils import DRILS
 
-best_pc, best_valuec = d.DRILS("instances_opt/instances/100/n100_44_b.txt", 4, 100)
+best_pc, best_valuec = DRILS("instances_opt/instances/1000/n1000_20_b.txt", 5, 1000000000000000)
 
-print(DRILS(SMWTP("instances_opt/instances/100/n100_44_b.txt"), local_search, partition_crossover, perturbation_function, 4, set, 100))
 print(best_pc, best_valuec)
 
 

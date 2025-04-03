@@ -7,6 +7,26 @@
 #include <unordered_set>
 #include <ctime>
 #include <algorithm>
+#include <set>
+
+class Pair {
+    public:
+        
+        std::string first;
+        int second;
+    
+        // Constructor to initialize the pair
+        Pair(const std::string& f, double s) : first(f), second(s) {}
+    
+        bool operator<=(const Pair& other) const {
+            return second <= other.second;
+        }
+
+        bool operator<(const Pair& other) const {
+            return second < other.second;
+        }
+
+};
 
 std::unordered_set<std::string> compute_scores(vector<int>& pi, std::unordered_map<int, std::unordered_map<std::string, int>>& neighborhood, SMWTP& instance, int k) {
 
@@ -59,7 +79,6 @@ std::vector<int> get_filtered_list(int x, int k, int n) {
 std::unordered_set<std::string> update_scores(vector<int>& pi, std::unordered_map<int, std::unordered_map<std::string, int>>& neighborhood, 
     std::unordered_set<std::string>& improving_set, std::vector<int> list_keys, SMWTP& instance, int k) {
 
-
     auto to_remove = std::unordered_set<std::string>();
 
     for(auto key: list_keys){
@@ -89,6 +108,8 @@ vector<int> local_search(int k, SMWTP& instance, vector<int> p) {
 
     while (improving_set.size() > 0) {
 
+        std::cout << improving_set.size() << "\n";
+        
         // select a random move from the improving set
         auto selected_move = getRandomElement(improving_set);
         int position = std::stoi(selected_move.substr(0, selected_move.find(':')));
@@ -97,6 +118,67 @@ vector<int> local_search(int k, SMWTP& instance, vector<int> p) {
         pi = compose(pi, move);
         auto list_keys = get_filtered_list(position, k, n);
         update_scores(pi, neighborhood, improving_set, list_keys, instance, k);
+
+    }
+
+    return pi;
+
+}
+
+auto compute_scores_steep(vector<int>& pi, std::unordered_map<int, std::unordered_map<std::string, int>>& neighborhood, SMWTP& instance, int k) {
+
+    std::set<Pair> improving_set;
+
+    for (auto& [position, moves] : neighborhood) {
+        for (auto& [key, _] : moves) {
+            
+            auto change = instance.delta(pi, to_vec(key), position, k);
+            neighborhood[position][key] = change;
+            if (change < 0) {
+                improving_set.insert(Pair(std::to_string(position) + ":" + key, change));
+            }
+        }
+    }
+
+    return improving_set;
+}
+
+void update_scores_steep(vector<int>& pi, std::unordered_map<int, std::unordered_map<std::string, int>>& neighborhood, 
+    std::set<Pair>& improving_set, std::vector<int> list_keys, SMWTP& instance, int k) {
+
+
+    for(auto key: list_keys){
+        for(auto & [sigma, val] : neighborhood[key]){
+            improving_set.erase(Pair(std::to_string(key) + ":" + sigma, val));
+            auto change = instance.delta(pi, to_vec(sigma), key, k);
+            neighborhood[key][sigma] = change;
+            if (change < 0) {
+                improving_set.insert(Pair(std::to_string(key) + ":" + sigma, change));
+            }
+        }
+    }
+
+
+}
+
+vector<int> local_search_steep(int k, SMWTP& instance, vector<int> p) {
+
+    int n = instance.getN();
+    auto pi = p;
+    auto neighborhood = generate_movements(n, k);
+    auto improving_set = compute_scores_steep(pi, neighborhood, instance, k);
+
+    while (improving_set.size() > 0) {
+
+        std::cout << improving_set.size() << "\n";
+        
+        auto selected_move = improving_set.begin()->first;
+        int position = std::stoi(selected_move.substr(0, selected_move.find(':')));
+        vector<int> move = to_vec(selected_move.substr(selected_move.find(':') + 1));
+
+        pi = compose(pi, move);
+        auto list_keys = get_filtered_list(position, k, n);
+        update_scores_steep(pi, neighborhood, improving_set, list_keys, instance, k);
 
     }
 
@@ -161,7 +243,7 @@ std::vector<int> perturbation_function(const std::vector<int>& p) {
     return current_permutation;
 }
 
-std::pair<std::vector<int>, int> DRILS(std::string& file, int neighborhood_size, long time_interval_drils){
+std::pair<std::vector<int>, int> DRILS(std::string& file, int neighborhood_size, long time_interval_drils, bool steepest_descent){
 
     auto instance = SMWTP(file);
 
@@ -174,20 +256,20 @@ std::pair<std::vector<int>, int> DRILS(std::string& file, int neighborhood_size,
 
     auto pi = random_permutation(id_set);
 
-    auto current = local_search(neighborhood_size, instance, pi);
+    auto current = steepest_descent ? local_search_steep(neighborhood_size, instance, pi) : local_search(neighborhood_size, instance, pi);
 
     auto best = current;
     auto best_value = instance.evaluate(best);
 
     while (std::time(nullptr) - t_0 < time_interval_drils) {
 
-        auto next = local_search(neighborhood_size, instance, perturbation_function(current));
+        auto next = steepest_descent ? local_search_steep(neighborhood_size, instance, perturbation_function(current)) : local_search(neighborhood_size, instance, perturbation_function(current));
         auto child = partition_crossover(current, next, instance);
 
         if (child == current || child == next){
             current = next;
         }else{
-            current = local_search(neighborhood_size, instance, child);
+            current = steepest_descent ? local_search_steep(neighborhood_size, instance, child) : local_search(neighborhood_size, instance, child);
         }
 
         auto current_value = instance.evaluate(current);
@@ -196,9 +278,9 @@ std::pair<std::vector<int>, int> DRILS(std::string& file, int neighborhood_size,
             best_value = current_value;
         }
 
-        // std::cout << "Current value: " << current_value << "\n";
-        // std::cout << "Best value: " << best_value << "\n";
-        // std::cout << "-------------------------\n";
+        std::cout << "Current value: " << current_value << "\n";
+        std::cout << "Best value: " << best_value << "\n";
+        std::cout << "-------------------------\n";
 
     }
 
