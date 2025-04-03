@@ -23,7 +23,7 @@ def analysis(prob, instance, neighborhood_size, time_to_run, real_optimal_value,
     data["best_value"] = pi_value
     data["best_permutation"] = pi
     data["distance_to_optimal_value"] = pi_value - real_optimal_value
-    data["performance"] = real_optimal_value / pi_value
+    # data["performance"] = real_optimal_value / pi_value if (real_optimal_value != 0 and pi_value != 0) else (real_optimal_value + 1) / (pi_value + 1)
 
 
     json.dump(data, open(output_file, "w"), indent=4)

@@ -1,6 +1,7 @@
 import os
 import json
 import matplotlib.pyplot as plt
+import numpy as np
 from itertools import product
 
 
@@ -14,7 +15,9 @@ def gen_graphics(path, n):
 
     for (run_time, neighborhood_size) in product(times_to_run, neighborhood_sizes):
         info.setdefault(run_time, {})
-        info[run_time][neighborhood_size] = []
+        info[run_time].setdefault(neighborhood_size, {})
+        info[run_time][neighborhood_size]["performances"] = []
+        info[run_time][neighborhood_size]["norm_relative_errors"] = []
 
 
     # Leer los archivos JSON y organizar los datos
@@ -22,9 +25,9 @@ def gen_graphics(path, n):
         file_dict = json.load(open(os.path.join(path, file)))
         run_time = file_dict["time_to_run"]
         neighborhood_size = file_dict["neighborhood_size"]
-        performance = file_dict["performance"]
 
-        info[run_time][neighborhood_size].append(performance)
+        if file_dict["real_optimal_value"] > 1: 
+            info[run_time][neighborhood_size]["performances"].append(file_dict["real_optimal_value"]/file_dict["best_value"])
 
 
     rows = (len(info) + 1) // 2  # Número de filas necesarias para 2 columnas
@@ -40,7 +43,7 @@ def gen_graphics(path, n):
     for ax, (run_time, neighborhood_data) in zip(axes, sorted(info.items())):
         neighborhood_sizes = sorted(neighborhood_data.keys())
         performances = [
-            [p for p in neighborhood_data[size] if p > 0] for size in neighborhood_sizes
+            [p for p in neighborhood_data[size]["performances"]] for size in neighborhood_sizes
         ]
 
         # Crear un boxplot para cada tamaño de vecindario
@@ -54,8 +57,8 @@ def gen_graphics(path, n):
         ax.set_xlabel("Neighborhood Size")
         ax.set_ylabel("Performance")
 
-        ax.set_ylim(0.75, 1)  if n == 40 else ax.set_ylim(0.05, 1)
         ax.set_yscale("log")
+        ax.set_ylim(bottom=(0.7 if n == 40 else 0.1), top=1)
 
         ax.grid(True, linestyle="--", alpha=0.7)
 
@@ -96,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--n", type=int)
     args = parser.parse_args()
     n = args.n
+    # n = 40
     
     path = "./results/" + str(n)  +"/"  # Ruta a los archivos JSON
     gen_graphics(path, n)
