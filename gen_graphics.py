@@ -45,15 +45,15 @@ def analysis(n, neighborhood_sizes, times_to_run):
 
                             if first_iter:
                                 for t in times_to_run:
-                                    
-                                    normalized_error = abs(data[key] - real_optima)/real_optima
-                                    info[neighborhood_size][t].append(normalized_error)
-                                    first_iter = False
+                                    if int(key) < t:
+                                        normalized_error = abs(real_optima - data[key])/data[key]
+                                        info[neighborhood_size][t].append(normalized_error)
+                                        first_iter = False
                             else:
 
                                 for t in times_to_run:
                                     if  int(key) < t:
-                                        normalized_error = abs(data[key] - real_optima)/real_optima
+                                        normalized_error = abs(real_optima - data[key])/data[key]
                                         info[neighborhood_size][t][len(info[neighborhood_size][t]) - 1] = normalized_error
                     else:
                         
@@ -63,10 +63,10 @@ def analysis(n, neighborhood_sizes, times_to_run):
 
                             if first_iter:
                                 for t in times_to_run:
-                                    
-                                    normalized_error = abs(data[key])
-                                    info[neighborhood_size][t].append(normalized_error)
-                                    first_iter = False
+                                    if int(key) < t:
+                                        normalized_error = abs(data[key])
+                                        info[neighborhood_size][t].append(normalized_error)
+                                        first_iter = False
                             else:
 
                                 for t in times_to_run:
@@ -222,7 +222,8 @@ if __name__ == "__main__":
 
     times_to_run = {
         40: [5,10,15,20,40,60],
-        100: [10,30,60,120,300,600]
+        50: [30,60,90,120,300,600],
+        100: [300,600,900,1200,1500,1800]
     }
     
     info = analysis(args.n, neighborhood_sizes, times_to_run[args.n])

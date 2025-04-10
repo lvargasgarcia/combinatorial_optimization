@@ -55,13 +55,13 @@ permutation_t partition_crossover(const permutation_t& sigma_1, const permutatio
         double delta_1 = instance.delta(identity, sigma_1, h, initial_pos, incr + 1, common_tardiness);
         common_tardiness += aux_common_tardiness;
 
-        double delta_2 = instance.evaluate(compose(sigma_1, h, n)) - instance.evaluate(sigma_1);
+        // double delta_2 = instance.evaluate(compose(sigma_1, h, n)) - instance.evaluate(sigma_1);
 
-        if(delta_1 != delta_2){
-            std::cout << "Error: " << delta_1 << " != " << delta_2 << "\n";
-            delta_2 = instance.evaluate(compose(sigma_1, h, n)) - instance.evaluate(sigma_1);
-            delta_1 = instance.delta(identity, sigma_1, h, initial_pos, incr, common_tardiness);
-        }
+        // if(delta_1 != delta_2){
+        //     std::cout << "Error: " << delta_1 << " != " << delta_2 << "\n";
+        //     delta_2 = instance.evaluate(compose(sigma_1, h, n)) - instance.evaluate(sigma_1);
+        //     delta_1 = instance.delta(identity, sigma_1, h, initial_pos, incr, common_tardiness);
+        // }
 
         if (delta_1 < 0) {
 
@@ -111,8 +111,33 @@ permutation_t perturbation_function(const permutation_t& p, std::mt19937& gen) {
         total_elems += r;
     }
 
+    // for (int i = 0; i < n; i++){
+    //     std::cout << current_permutation[i] << " ";
+    // }
+
+    // std::cout << "\n";
+
     return current_permutation;
 }
+
+permutation_t shuffle_elements(const permutation_t& p, std::mt19937& gen) {
+    permutation_t resp = p;  // copia completa de la permutación original
+
+    int elements_to_move = p.size() / 5;
+
+    for(int k = 0; k < elements_to_move; ++k) {
+        int i = std::uniform_int_distribution<>(0, p.size() - 1)(gen);
+        int j = std::uniform_int_distribution<>(0, p.size() - 1)(gen);
+        std::swap(resp[i], resp[j]);
+
+        // std::cout << resp[k] << " ";
+    }
+
+    // std::cout << "\n";
+
+    return resp;
+}
+
 
 std::vector<std::pair<long, long>> DRILS(SMWTP& instance, int neighborhood_size, long time_interval_drils){
 
@@ -128,7 +153,7 @@ std::vector<std::pair<long, long>> DRILS(SMWTP& instance, int neighborhood_size,
         id_perm[i] = i;
     }
 
-    auto device = std::mt19937();
+    auto device = std::mt19937(std::random_device{}());
 
     auto pi = random_permutation(id_perm, device);
 
@@ -139,7 +164,7 @@ std::vector<std::pair<long, long>> DRILS(SMWTP& instance, int neighborhood_size,
     resp.push_back(std::make_pair(std::time(nullptr) - t_0, current.second));
 
     while (std::time(nullptr) - t_0 < time_interval_drils) {
-
+        
         auto next = local_search(neighborhood_size, instance, perturbation_function(current.first, device));
         auto child = partition_crossover(current.first, next.first, instance);
 

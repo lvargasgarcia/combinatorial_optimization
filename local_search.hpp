@@ -161,7 +161,7 @@ std::pair<permutation_t,long> local_search(int k, SMWTP& instance, const permuta
 
     while (neighborhood.improving_moves_set.size() > 0) {
 
-        // std::cout << neighborhood.improving_moves_set.size() << "\n";
+        std::cout << neighborhood.improving_moves_set.size() << "\n";
         
         auto selected_move = neighborhood.select_improving_move();
         current_fit += neighborhood.scores[selected_move.second];
